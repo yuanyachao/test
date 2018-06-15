@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+
+      <div class="col-md-9">
+
+            <div class="article_content">
+                <div><h3>{{ article_obj.title }}</h3></div>
+                <hr>
+                <div class="content">{{ article_obj.articledetail.content }}</div>
+                <div class="icon">
+                    {% csrf_token %}
+                    &nbsp<a href="">评论</a>
+                    <a class="poll">赞 <span>{{ article_obj.up_count }}</span></a>
+
+                    <span class="c1"></span>
+
+              </div>
+            </div>
+
+
+          <hr>
+          <h2></h2>
+
+
+          <h5>已有评论：</h5>
+
+
+
+          <ul class="list-group comment_list">
+              {% for coment in coment_list %}
+                  <li class="list-group-item comment_item">
+                      <a href="">{{ coment.user.username }}</a>
+                      <a href="">{{ coment.create_time|date:"Y-m-d H:i" }}</a>
+
+                      <a href="" class="pull-right">&nbsp;支持</a>
+                      <a href="#comment_content" class="pull-right reply_btn">回复</a>
+                      <span class="{{ coment.nid }}"></span>
+                     <div>
+                        {% if coment.parent_id %}
+                            <span><a href="">@</a>{{ coment.parent_id.user.username }}:{{ coment.parent_id.content }}</span>
+                            <p>{{ coment.content }}</p>
+                         {% else %}
+                            {{ coment.content }}
+                        {% endif %}
+                     </div>
+
+                  </li>
+              {% endfor %}
+
+
+
+
+          </ul>
+
+
+          <form action="">
+              <textarea  id="comment_content" cols="30" rows="10">
+
+
+
+              </textarea>
+               <p>
+                   <input type="button" value="submit" class="btn btn-primary ajax_comment">
+               </p>
+
+          </form>
+
+
+
+      <script>
+
+          String.prototype.format= function(){
+               var args = arguments;
+               return this.replace(/\{(\d+)\}/g,function(s,i){
+                 return args[i];
+               });
+        };
+
+
+           var article_id={{ article_obj.nid }};
+           var parent_comment_id="";
+           var father_comment_username="";
+
+           $(".poll").click(function () {
+               // 实现一个点赞： 哪一个用户对哪一篇文章点了赞
+
+
+               {% if request.user.is_authenticated %}
+                    $.ajax({
+                   url:"/blog/poll/",
+                   type:"POST",
+                   data:{"csrfmiddlewaretoken":$("[name='csrfmiddlewaretoken']").val(),
+                         "article_id":article_id
+
+                   },
+                   success:function (data) {
+                       data=JSON.parse(data);
+
+                       if (data["flag"]){
+                                                 $(".poll").children("span").text(parseInt($(".poll").children("span").text())+1)
+                       }
+                       else {
+                           $(".poll").next(".c1").text("Uptoed！").css("color","red")
+                           setTimeout(function () {
+                               $(".poll").next(".c1").text("")
+                           },1000)
+
+                       }
+
+                   }
+
+
+               });
+
+                {% else %}
+                   location.href="/login{{ request.path }}";
+
+
+
+                {% endif %}
+
+
+
+
+           });
+
+       // 回复评论事件
+
+           $(".comment_list").on("click",".reply_btn",function () {
+                  parent_comment_id=$(this).next().attr("class");
+                      father_comment_username=$(this).siblings().eq(0).text();
+
+                      $("#comment_content").val("@"+father_comment_username+"\n")
+           });
+
+
+      // 提交文章 评论
+
+
+            $(".ajax_comment").click(function () {
+
+                var index=$("#comment_content").val().indexOf("\n");
+
+
+                var comment_content=$("#comment_content").val().substr(index+1);
+
+
+                 {% if request.user.is_authenticated %}
+                    $.ajax({
+                           url:"/blog/comment/",
+                           type:"POST",
+                           data:{"csrfmiddlewaretoken":$("[name='csrfmiddlewaretoken']").val(),
+                                 "article_id":article_id,
+                                  "comment_content":comment_content,
+                                 "parent_comment_id":parent_comment_id
+
+                           },
+                           success:function (data) {
+                               var temp=father_comment_username;
+
+                               if (temp){father_comment_username="<a>@</a>"+temp}
+
+
+                               alert(comment_content)
+
+                               data=JSON.parse(data);
+
+                               s='<li class="list-group-item comment_item"><a href="">{0}</a><a href="">{1}</a><a href="" ' +
+                                       'class="pull-right">&nbsp;支持</a> <a href="#comment_content" class="pull-right reply_btn">' +
+                                       '回复</a><span class="{2}"></span> <div> <span>{3}</span> <p>{4}</p></div> </li>';
+
+
+
+                               s=s.format(
+                                       '{{ request.user.username }}',
+                                        data["comment_createTime"],
+                                        parent_comment_id,
+                                        father_comment_username,
+                                        comment_content);
+
+                               $(".comment_list").append(s);
+
+                               $("#comment_content").val("");
+
+                               father_comment_username="";
+                               parent_comment_id=0
+
+                    }
+
+
+               });
+
+                {% else %}
+                   location.href="/login{{ request.path }}";
+
+
+
+                {% endif %}
+
+
+            })
+
+      </script>
+
+      </div>
+
+
+
+{% endblock %}
+
+{% block others %}
+
+
+            <div class="panel panel-primary">
+                  <div class="panel-heading">Panel heading without title</div>
+                  <div class="panel-body">
+                   <p>111</p>
+                   <p>111</p>
+                   <p>111</p>
+                  </div>
+                </div>
+
+            <div class="panel panel-warning">
+              <div class="panel-heading">
+                <h3 class="panel-title">Panel title</h3>
+              </div>
+              <div class="panel-body">
+                   <p>111</p>
+                   <p>111</p>
+                   <p>111</p>
+              </div>
+            </div>
+
+
+             <div class="panel panel-info">
+              <div class="panel-heading">
+                <h3 class="panel-title">Panel title</h3>
+              </div>
+              <div class="panel-body">
+                <p>111</p>
+                   <p>111</p>
+                   <p>111</p>
+              </div>
+            </div>
+
+{% endblock %}
+
+
